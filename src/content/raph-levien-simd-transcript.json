@@ -1,0 +1,845 @@
+[
+  {
+    "speaker": "Raph Levien",
+    "text": "Hi, thanks for inviting me on. My name is Raph Levien. I'm an engineer on Google Fonts. Although I have to say that I am in this podcast only speaking for myself that my opinions are my own and not those of my employer. Mostly what I work on these days is font rendering and 2D graphics rendering, really focusing - it's a little bit funny that most of what I work on is GPU, but there's a component of that where you have to make the CPU side of it as fast as possible. And that's why I have this kind of rekindled interest in SIMD in the last few months."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Yeah, that makes sense. And people often talk about GPUs as SIMD machines."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "I mean, I think the way that I would probably characterize that is that there's a continuum of how much parallelism your computer is exploiting, and a GPU is kind of on the extreme side. If you don't have 10,000 threads, then a GPU is just - you're not using the capabilities of that machine. Whereas, a classical scalar computer, you've got one thread. It's really doing one operation at a time sequentially on, like, one number or one unit of data. And SIMD is in the middle of that spectrum, right?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "With SIMD, you've got one thread of execution running on the CPU, but it might be doing anywhere from four to 32 or even in some cases 64 operations in parallel, in lockstep at the same time."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "This is done through what we call SIMD instructions, right? SIMD stands for \"single instruction, multiple data\"."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Single instruction, multiple data. Exactly."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Right." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And this is a distinction like, you know, that when you're on a GPU, you have this thing called \"single instruction, multiple threads\". Which is very subtly different than \"single instruction, multiple data\". The hardware is actually pretty similar, but the programming model is completely different because on a GPU you have different threads and so the core of the difference, maybe we're getting ahead of ourselves, but I find the stuff fascinating. The core of the difference is that if, let's say you have an if statement where you say if condition, then A, else B, and on SIMT, you can write that as an if statement and it, the compiler and the hardware will map that to what's called predication. So you'll have a predication mask. So you've got this vector of whatever you're working on. So the mask is gonna be a vector of booleans, might be like, let's say 32 wide is a really common width for this, especially for GPUs. So you have a vector of 32 bools that says, is that condition true or false? And then you do A, but it's masked where it actually only does it for the lanes in the mask that were true."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And then you do B and it only does those for the lanes in the mask that are false. And then if you're all true or all false, then you actually skip that instruction because you don't need to execute it. And when you do have some false, some true, that's called divergence and that's less efficient."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So when you're programming a GPU, you need to be very conscious about, you know, like, don't have too much divergence. 'cause that's one of the things that'll slow down your performance. So the hardware's actually similar, SIMD is the same hardware you can write if you're writing SIMD code. The difference is that you would be writing that explicitly, that you'd have one thread as opposed to 32 threads."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Yeah. And this is probably related to why, you know, it's sort of GPU development folklore. There's this feeling that branches are slow, or at least as slow as doing both of them separately. Although, since as you said, if there's no divergence, it doesn't actually have to perform the other half of the branch."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Yeah. So that folklore is partially true and I think it used to be more true than it is. I think modern GPUs actually resemble CPU more, and so a lot of the stuff that you're used to doing, branches and indirection and stuff that actually work on GPUs today. But might not have worked really well say 15, 20 years ago."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "It's interesting. I mean, GPUs, they still are crazy. Like. you don't have a proper function calls on GPU, right?"
+  },
+
+  { "speaker": "Raph Levien", "text": "You do in CUDA." },
+
+  { "speaker": "Andre Popovitch", "text": "Oh, yeah." },
+
+  { "speaker": "Raph Levien", "text": "Not graphics, APIs." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Right. Yeah. You don't have it in Vulkan."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "That's right. In SIMD, like, so this is where things get interesting because in SIMD, of course you have function calls, but that function call is gonna take all of the SIMD lanes with it. You're definitely not able to do a function call on this subset of lanes and do something else in the other subset of lanes."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Yeah, so SIMD, it feels somewhat lower level than SIMT somehow, I mean, especially once you start writing actual assembly to make use of the intrinsics, then it starts feeling really low level."
+  },
+
+  { "speaker": "Raph Levien", "text": "That's right. That's right." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Okay, we've covered the basics of SIMD. You write one instruction and it does like 10 additions at the same time or whatever."
+  },
+
+  { "speaker": "Raph Levien", "text": "Well, pretty unusual number." },
+
+  { "speaker": "Andre Popovitch", "text": "Haha. It's 16 additions." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "A power of two. We can maybe imagine a decimal SIMD machine that does 10."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Yeah. We'll wait until AVX 500 comes out."
+  },
+
+  { "speaker": "Raph Levien", "text": "Okay. " },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "These instructions though. They're not a totally standard thing that can be expected to be in every CPU, right?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Right, right. So that's the next part of the story. And so, you know, one of the things is, when people talk about CPUs and CPU architectures, you're usually talking about a RISC versus CISC choice. Where RISC means \"Reduced Instruction Set Computing\", and CISC means \"Complex Instruction Set Computing\". And there's this kind of historical divide where older computers might have these very complex addressing modes where instead of saying, I'm gonna add these two numbers together that are in registers, you might say, \"go use this register, fetch a value from this memory location pointed to by this register, increment that register, and then do the arithmetic operation on it\"."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So that would be a very typical CISC instruction, complex instruction. Whereas in RISC, you say \"we're gonna separate the functions of loading and storing and adding\". So each function is actually doing a really, really, really simple thing. Like add these two numbers together. Go fetch this from this location in memory. Go store this in this location in memory or branch and those operations that I just said, that's basically the whole story, right? Almost all of the computation, when you have a compiler and you're mapping it to what the computer is executing, it's really mapping it to just those instructions."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "That may be 95% or more of the instructions executed. But SIMD blows the entire concept of RISC away. The SIMD instruction sets are enormously complicated, right? In modern SIMD, in something like AVX 512, which is, you know, the most sophisticated SIMD implementation, I think there are over 2000 instructions. Like, you have to scroll, right? Whereas, you know, you look at an ARM, which is a beautiful RISC-inspired instruction set, and there's quick reference cards that fit on one piece of paper, right? It's just a completely different ball game. And unfortunately, there's definitely a common set."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So when you think about the obvious things of like, do this operation, like add subtract, multiply, compare, et cetera, on an entire vector of data, those are gonna be pretty much the same across all computers, all CPU architectures, but even something like, so there's an operation called minimum and maximum, right? It's very simple. And this also gets to what you were talking about earlier in branching that in a very classical computer, you don't have a minimum or maximum instruction. You say, if A is less than B, then choose A else choose B. That's the usual way you would write that. And in RISC, you'd have that sequence of instructions that would compute exactly that. But in a CISC design, in a modern CISC design, which is SIMD, you have a min and a max instruction, and it just does all that logic. The rules for floating point are slightly weird, like what if one of the operations is a NaN or something like that - \"not a number\" representation. You've got these floating point \"numbers\" that are not really numbers, and so there's IEEE rules for what min does, and then there's the operation that the chip does, which is slightly different, and then that operation might be slightly different on Intel than on, you know,"
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Oh no." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "It gets really, it gets really complicated, but yeah, so you end up having these instructions that both do a lot of bulk data. They're operating on this vector of very typically 8 or 16 operations at a time. And you also have typically more complex instructions that are being executed, that are, you know, that maybe a little bit of a semantic level up where you're saying minimum and maximum, or you're saying, select this mask, select business. You'd typically have, like, that would be one way of doing if-then-else. You evaluate A, you evaluate B, and then you say select A or B based on the value of that mask."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "So is minimum-maximum an example of a SIMD instruction that you can't be sure that your user's hardware will actually have?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "That's right. That's right. I mean, I think minimum and maximum. So, you know, when you talk about this question of levels, and that's really, that's really also a very central question because the capabilities they keep on adding more and more and more, right? So you look at a very old chip and it's gonna be missing some of these more advanced instructions. You look at a new chip, it's got everything. And so that's a real big question. How do you know what capabilities your computer has? And if you've gotten an instruction in the stream that your hardware is too old, you know, that instruction was defined after that hardware came out, then you're actually going get undefined behavior, right? This is a very subtle thing. People talk about assembly language typically doesn't have undefined behavior, right? For example, in C if you add two signed numbers together and they overflow, that's undefined behavior. But you don't have that instruction on CPUs. You have an add instruction, and then the add instruction is almost always defined as having wrapping semantics. So the undefined behavior comes from, oh, the compiler gets to do these optimizations assuming it didn't overflow, right? And then if the assumptions are wrong, then the compiler might do something really unexpected. Like for example, you have a comparison operation against a bounds. And then you write out of bounds data. This happens all the time, but executing a SIMD instruction that does not exist on your particular level of hardware is actual real undefined behavior at the hardware level."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "I mean, how would it be defined except maybe to do something weird like crash?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Sometimes it'll crash, sometimes it'll, you know, there's a whole menu of what the hardware will actually do when it hits that instruction."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Is there some way to ask your CPU \"what instructions set do you support?\""
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Exactly right. So on Intel, it's called CPUID. And on other chips it's other things, usually it's just sort of reading some kind of flags out of a word somewhere, that says \"this is the set of extensions\" \"this is a set of SIMD instructions that I actually support\". So, obviously there's different approaches to this that if you know which chip you're actually running on, then in Rust you usually say --target-cpu=. So you can say --target-cpu=haswell, or you can say --target-cpu=native, which will go and read those CPUID bits and compile the code for that chip."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So you're good as long as you know what hardware you're running on. But a lot of times you want to write code that will run on any hardware. And so you need to have, like, this is called dispatch and it's also called multi versions. So you need to write multiple versions of your code that use the different levels. 'cause the new level may have new features that run a lot faster. And so you wanna have multiple versions of that function, and then you want to do the runtime detection of what the chip can actually support, and then dispatch to whichever of those versions is actually supported by the hardware."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "So the idea is that we only have a problem if we try and execute some instructions that's not supported. The instructions just existing somewhere in the binary is fine."
+  },
+
+  { "speaker": "Raph Levien", "text": "Right." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "And then, before we get to the point where we might do something that is undefined, might execute an instruction that's unsupported. One option is to read the set of supported instructions and then pick an implementation that only uses instructions that are supported."
+  },
+
+  { "speaker": "Raph Levien", "text": "Right." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Okay. Or you could just, I've always wondered this, like, when I do cargo install..."
+  },
+
+  { "speaker": "Raph Levien", "text": "Mm-hmm." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "It builds it from source. Like, it can build it, assuming it's gonna run on my computer. Right."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "That's right. That's absolutely right. And so, depending, and that's a really interesting observation because, you know, there's some code that isn't going to change performance that much depending on what level it's compiled for. 'cause if you're talking about the basic RISC operations, those are pretty much the same. Those haven't really changed since the nineties. When you're talking about SIMD, it can be the number of lanes, like an old Intel chip is only gonna have 128 bits wide SIMD but a newer one, which is defined as basically everything in the last 12 years you're gonna have 256 bits and then really new Intel chips will, or actually it's more likely that there'll be AMD chips these days - the Zen 4 and Zen 5 have 512 bits."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So you might have a performance difference of 4x if you've got something that's really numerically intensive, between saying, just compile this for the most generic target, versus compile this for what I know that my actual hardware can support."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "That makes sense. And then of course, if you do that, then you don't pay any costs in terms of choosing which to dispatch. You decide at compilation time and then it's sort of fixed for that binary. You can't copy it to your friend's computer necessarily and have it work."
+  },
+
+  { "speaker": "Raph Levien", "text": "Yeah." },
+
+  { "speaker": "Andre Popovitch", "text": "But..." },
+
+  { "speaker": "Raph Levien", "text": "If they don't have a Zen 4." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "You should stop being friends with them maybe."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Undefined behavior. Yes, exactly. Best way you lose a friend."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "So what does the situation look like in Rust?"
+  },
+
+  { "speaker": "Raph Levien", "text": "Mm-hmm." },
+
+  { "speaker": "Andre Popovitch", "text": "Can we do this?" },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So it's evolving in Rust and, so I'm particularly interested in it evolving in a more high level, more friendly direction. But the current state is that you have, for one thing, you've got all of the intrinsics, right? And I think we skipped over intrinsics versus assembly language instructions, and maybe we should."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Oh yeah, let's go back." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Let's go back and do that, and then come back to rest. Right. Okay, great. You've got this huge set of instructions. It can be thousands that you need to choose from. And traditionally, until I would say maybe 10 or 15 years ago, that the only really practical way to get these instructions is to write them in assembly language."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So you're really, you're talking about low level, you're really dropping down to the very lowest level of the chip, where you're writing the exact instruction sequence that the chip is gonna be executing. And part of that task is, you know, the SIMD instructions are operating on registers and you need to, which is a fixed number."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "There's usually like 16 or 32 SIMD registers. And so then you need to decide instead of writing x and y, you're writing, you know, XMM0, YMM7, right? Which is really like, I actually personally kind of enjoy the puzzle aspect of writing that kind of code at that very low level. But when you start having to do all of these different versions for, you know, ARM and Intel being different, and then the different levels within each individual architecture, it really gets impractical fast. So the way that compilers do this, is you've got intrinsics and intrinsics have been evolving as well. And so an intrinsic is a function. So you'll have an instruction and it might be called something like VADDQ_F32, right? Which would be the arm instruction for adding a vector of four f32 floating point numbers to, you know, two vectors of f32 to each other. And of course, on ARM it's VADDQ_F32 and on Intel it's _mm_fadd... I don't remember, I might not have, I shoulda prepared this in advance, but it's got just different naming."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "It's very inconsistent. It's very hard to wrap your head around, but at least you're writing x and y. Like, you can assign these vectors to variables and you don't have to decide which registers they live in. The compiler will do its usual register allocation and kind of take care of that for you. In the early days, kind of why is this changing - in the early days, the compiler didn't understand anything about these instructions. It's like \"I know I have to allocate the registers when I say X, that's gonna go into YMM3 this time.\" Right? But other than that, it's like \"VADDQ_F32? I have no idea what that is. I'm just gonna take that intrinsic and know that I need to generate the FADD.F32 instruction\" in arm64 assembly language."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "And it was a complete black box as a compiler."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Exactly. The sequence of instructions you wrote would be what you get, and the compiler would be doing kind of the very minimal translation of that into the actual assembly code, that it's generating. And it wouldn't always do that very efficiently because the number of registers that you have is fixed."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And so what if you use more variables than you have registers. And that's, you know, the compiler will handle that. It'll generate code that works, but it'll do it by what's called \"register spilling\", which means generally storing some of those variables on temporary stack locations instead of in registers. And your performance could just like, be terrible. So I think that in the early days of intrinsics there was a lot of skepticism of, you know, I'm reasoning about this in terms of I know what instructions that I wanted to execute. Is the compiler actually gonna do a good job of scheduling these?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Right? And for example, if you look at the ffmpeg project, they have guidelines that are like, \"no, we don't do intrinsics. We're still in the assembly language camp\". I think the rest of the world has pretty much moved on. Fast forwarding a little bit these days you have LLVM, right, which is used by Rust and is really pretty much the state-of-the-art code generator for compilers. It understands SIMD intrinsics really well. So I'll give you an example of the kind of optimization that AVX512 has this instruction. There's actually blog posts on it, and the instruction is called VPTERNLOG. And it's \"vector parallel ternary logic\" is what that stands for."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Whoa." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And so it basically will do any Boolean combination of three inputs. So for example, selecting from B and C, depending on mask of value A, in Boolean logic, that's A AND B OR !A AND C. In binary operations you'd write that out as three instructions, AND and NOT and OR, and actually even AND NOT is a kind of a cool thing because in Rust if you're writing that out, it would be, \"and\", and then \"not\"."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Mm-hmm." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "It would actually be four operations that are combined and the VPTERNLOG instruction will do any of those boolean combinations. So you can do XORs and ANDs and you know, any combination."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Does this mean you can have, like, any truth table you want? That's crazy."
+  },
+
+  { "speaker": "Raph Levien", "text": "Truth table. You put in the truth." },
+
+  { "speaker": "Andre Popovitch", "text": "That's crazy." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Yeah, absolutely. And so LLVM understands this very well, so it's only in more recent Intel chips. So if you're writing, you know, you can write your logic just as ordinary boolean logic. And then when it's compiling, depending on the target, it's compiling to, it'll either do that sequence in of instructions or it will say, \"Hey, I can use VPTERNLOG\". This is really cool."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Yeah." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "These days, because LLVM actually understands those instructions and understands how to optimize them, that that is the kind of only scalable way to write lots of SIMD code these days."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Let's go back up a little bit. We have these intrinsics, at some point the compiler had no idea what was going on."
+  },
+
+  { "speaker": "Raph Levien", "text": "Right." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "It wouldn't generate them, I assume. But now LLVM knows what they do and is even able to use them to optimize your code."
+  },
+
+  { "speaker": "Raph Levien", "text": "That's right." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "But this happens when you write like, AND OR NOT in a if statement, and then it generates the proper SIMD instructions if they're supported based on your settings, right?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Right. And there's actually another piece of this is called auto vectorization. And auto vectorization is exactly the same concept where it knows what the intrinsics are and it knows how to optimize them. But your starting point is scalar code. So you can write Rust code that says for i in 0..4. Add the values in vector A, which is a vector of [f32; 4] to B. And LLVM will look at that code and it'll be like, Hey, this is actually expressing something that can be optimized into a SIMD instruction, and it will generate that FADD.F32 ARM instruction for it or the corresponding ADDPS instruction on Intel."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Yeah. And I remember this being actually a sort of selling point for Rust at some points, I don't know if people still talk about this, but there was this idea that, you know, let's say you have a function that takes a mutable slice and a immutable slice, supposedly, you know, Rust, using the fact that a mutable slice can't be aliased, would know that the other slice was pointing somewhere else."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "And then this would allow it to be a little bit smarter in how it implements auto vectorization. And I know that they have some flag for whether or not you should actually do this in LLVM that they keep turning on or off."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Yeah, no, I think we're kind of past that. Yes. So that's landed."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Okay." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "That's landed now. So you can have the LLVM aliasing analysis that will understand and respect the Rust semantics and say, \"Hey, I can optimize this. I know that this is not gonna alias and therefore, I know that, for example, when I'm storing the results, those are not gonna be overriding the results that I'm loading, therefore I can now do it in parallel\". That's the kind of thing that that enables."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Okay. That's cool. But, it's still by default, you know, the Rust compiler by default is going to target this sort of very old, I don't know, remember exactly how old you said, but 12-year-old or more instruction set that doesn't have any of the new fancy stuff that could be multiple times faster."
+  },
+
+  { "speaker": "Raph Levien", "text": "That's right." },
+
+  { "speaker": "Andre Popovitch", "text": "In some cases." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "That's right. And, and that by the way, this, this, how painful that dispatch problem is, is gonna vary a lot depending on what you're compiling to. Because if you're compiling to Apple Silicon, right? That has all of the goodies. That has, NEON, it has __fp16, it has these 16 bit types in it. And so if you're compiling on Apple Silicon and you just say, cargo build --release, you're good. It isn't there. There's subtle things that have evolved, but 99% of the time you don't have to worry about it all. Whereas on Intel is this different story, the x86_64 target was defined kind of before the flowering of all the really good SIMD stuff. And so it's really stuck with SSE which really, really comes from before the 64 bit days, and you're really not getting those benefits. So if you're on Intel, you're like, oh boy, I really better have, you know, either specifying the target architecture or doing multi versioning and dispatching."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "I see. And, okay, if, let's say I take a fancy SIMD instruction..."
+  },
+
+  { "speaker": "Raph Levien", "text": "Mm-hmm." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "That's, you know, for something recent and I just took it in my Rust code, and I compile it and then I send it to my friend, it might not work right."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Right. And so, this is one of the things that's evolving. Because that can happen in Rust today as we speak, and — hopefully people in the future will be like, \"man, that was primitive way back then when they recorded that podcast,\" — that *all* SIMD instructions are unsafe because there's no guarantee that the hardware will actually support that instruction."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So it's basically this kind of to you like, \"are you sure that you're actually gonna be able to execute this instruction?\" And so you annotate that instruction or you, in Rust, you annotate the intrinsic and, and you say, I'm gonna, I'm gonna call this function, which, you know, might be, mm_add_ps, right? (If you're on Intel.) But it's unsafe. And so you, if you put that in your Rust code without the unsafe annotation, the compiler would be like, \"no, sorry, you can't do this.\" I'm gonna only let you compile code that you can give to your friend."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "So to do things safely, it only lets you compile code that uses only old intrinsics. Right?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "None of the intrinsics at all. So it only lets you do auto vectorization. If you write that four loop where you say, I'm gonna add four floats and a vector together, it might generate, it might or might not, right? In terms of like any SIMD intrinsics at all, no matter how conservative, no matter how likely it is that you're gonna be able to run it, it's just unsafe and you just can't do it in, in safe Rust today."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "That's cool. Okay. I had wondered why they were unsafe. I've never used them professionally, but when I'm doing something for fun, I was like, you know, that's weird. And I just write unsafe and then I don't worry about it anymore."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Yeah. Absolutely. So as I say though, this is evolving because, there it is possible to do reasoning about \"when can I do this safely?\" Right. And you know, we can go into more detail or I can just give you the basics that there's this thing called target_feature. And target_feature is an annotation that you put on the function that says, inside this function, I am assuming that I have at least these features, at least this level of SIMD capability. And, and then you, you basically have, there's, there's this new thing that's actually gonna be landing, I believe in Rust 1.86, called target_feature 1.1. That allows you a little bit better reasoning, where it's like, if you're going from one function that has a target features guard on it into another function that has the same guard, that does _not_ have to be marked as unsafe, it can do that transition safely."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Because it says, I've already made the assumption, we've already kind of tested that this hardware is capable of doing it. So therefore you have a pattern where you say, I'm going to detect is this feature available? And then if so, then I'll call into my target feature annotated function. And that pattern is safe."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "So then would it be possible to have two implementations of a function that have the same signature and then it somehow it just calls the right one?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "It's not gonna do that for you automatically. That's the catch. So you can express it, but you have to express it explicitly in Rust today."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "I see." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And there's proposals, you know, I mean this is kind of the active, this is the cutting edge of Rust right now, of can we somehow or another make this process more humane?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "You know, so you're not sitting there manually writing \"if x86 features detected, you know, then unsafe call into this thing that has this target_feature annotation on it\". I mean, nobody really wants to write a lot of that. And so I think, you know, that's now the frontier. 'Cause Rust, aside from SIMD Rust is excellent at this."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Rust is like, how can we reason about safety? How can we encode our safety invariants in the type system or encode, you know, the safety into the design of the library. And there's a lot of stuff that you could do safely, but Rust today is just not smart enough to reason about that safety and say, okay, go ahead and just say, I wanna add these vectors together and I'll multiversion for you and I'll pick the best intrinsics to actually make that happen."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Yeah, I feel what everyone kind of dreams about is that someone else who's really smart wrote a library and the library has a function that's called add and it takes two vectors."
+  },
+
+  { "speaker": "Raph Levien", "text": "Yeah." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "And you know, they can just call it, and somehow it'll do whatever's best."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "True to some extent. So you have this library, there's actually a few libraries out there that try and kind of provide a safe wrapper around SIMD operations. And the one that's kind of the most mature, you know, that people are really using is called, I don't know how to pronounce it. I'm just gonna say \"faer\". It's FAER and it is like, my own personal experience with it has not been fantastic because it's really organized around linear algebra it's really good at linear algebra operations, matrix math, that kind of stuff. It does complex numbers really well, which I don't do a lot of personally. So I feel like it's not quite the right thing for me. But if you're doing linear algebra, you're doing fast fourier transforms, you're doing that kind of stuff, then it's great. And it does exactly that, there is a function that says, I have this vector of numbers, I just wanna add them, or I wanna do this butterfly multiply add or something like that. And then it has internally inside the library, there's all of this logic to say, if I'm generating code for arm, I'm gonna do this. If I'm generating it for Intel, I'm gonna do that. I'm gonna dynamically detect what my hardware capabilities are. I'm gonna dynamically choose my vector width to be as wide as the hardware will support. So that's the future. And the question is, how do you evolve the Rust language to make those smoother? And then the second part of the problem is how do you extend this so it's not good just for linear algebra, but you can do these other - 'cause you can SIMD. Talk a little bit about like what is SIMD good for? I think we kind of skipped over this a little bit, right? 'cause SIMD does not help you at all in that kind of classical object soup type of programming, right? But there are classes of problems where it is absolutely the perfect tool for the job."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And the best case for SIMD is media codecs doing compression and decompression of audio, video and images because you've got blocks of data. You're not just doing one thing at a time or making decisions on one thing at a time. You're always working on blocks of data. And at the same time you've got really complicated logic. Like MPEG, the video decoder will analyze the image and it'll divide it into these blocks of different sizes and then apply different compression algorithms on individual blocks. And that's something that, for example, GPUs are gonna have a really hard time doing."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "But for SIMD it is almost this perfect match because you're exploiting that parallelism on all the pixels or on all the audio samples. But you've still got that agility of being able to branch and make these decisions on a fairly fine grained basis. So, that's one class that SIMD is really well suited for. But you can also use SIMD on strings. "
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And there's like, if you look at Daniel Lemire, you know, he's got a research group that is doing all these string, unicodes, conversions and JSON parsing in SIMD and so on and so forth. And, you know, you just say, I'm gonna, you know, I've got a chunk of 16 bytes of this string. And you know, I'm gonna find out where the spaces are, right? That's just a comparison with the ASCII code for space."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Right." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "It works really well for that. But as I say, this FAER library is gonna be a really poor choice for those kinds of applications. 'cause it just doesn't build out those kind of logic."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "So when you said SIMD on strings, I started thinking about like, even more complex instruction sets. Imagine if there was a SIMD `to_uppercase` instruction."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So if you're writing `to_uppercase`, like if you're writing, ASCII `to_uppercase`, if you're writing unicode `to_uppercase`, you're kind of in a different world. But I can actually walk you through like, \"what does SIMD for `to_uppercase` look like in ASCII?\" And it's really very straightforward because, you're basically doing a comparison between lowercase \"a\", which happens to be 0x61 and lowercase \"z\", which happens to be, 0x7A."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Don't ask me why I have all these memorized, right? So that's like two comparison operations. And then you do the AND so both of those comparison operations are gonna generate a mask. So you're gonna get 1s, or trues for all of the things that are greater than are equal to 0x61 and another mask for all the things that are less than or equal to 0x7A. And then you AND those masks together, and that's all of the lowercase ASCII characters in your string. And so then in order to convert lowercase to uppercase, you subtract 0x20. And so, you know, like you either have a predicated or masked instruction that says subtract 0x20, but only do it for the lanes in which the mask is true. And then that's it. That's to_upper. Just explained how to do it on a chunk of 16. The problem is that how do you know, like if you know that your string is exactly 16 characters wide, you're good. But what if you don't know how wide that string is? And you need to do it on an arbitrarily sized string. So now you've got a really painful situation because if it's a multiple of 16, it's no problem. You just loop over chunks of 16, but usually you're gonna have a little bit left over at the end. This is one of the most painful things about doing SIMD programming because you have to deal with this explicitly, and in Rust, you cannot _load_ past the end of a slice."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "That is undefined behavior in Rust that is unsafe. So you have an instruction that says, load me 16 bites at a time. On older SIMD architectures, you don't have an instruction that says \"Only load up to like seven\" or something like that. But on newer designs, you have predication built into the hardware."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So you can have a load instruction that says only do that load on the lanes that are true. So then you construct a mask that has the leftover, you know, like up to seven or whatever. And then you say, do that load, that's predicated or masked, and so it only loads those, NEON does not have that AVX2, the older Intel style does not have that."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "It's only AVX512. It's only this very newest generation of SIMD that gives you, you know, a rich library of predicated instructions for doing this kind of string-to-string manipulation."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "And you, even if you don't touch the data, you can't even load it in Rust. "
+  },
+
+  { "speaker": "Raph Levien", "text": "That's right." },
+
+  { "speaker": "Andre Popovitch", "text": "Whoa." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Just loading it is considered unsound."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Interesting." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And of course storing is obviously unsound. But even loading, that's against the rules. If you have a slice of data, then any load operation inside that slice is fine. And any load operation that goes beyond the end of that slice is unsound."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Huh, that's interesting. And so yes, this is a issue where like, you know, if your, if your string is like, 33 bytes long, right? You have 16 boom, 16 boom, then, oh, what do I do now?"
+  },
+
+  { "speaker": "Raph Levien", "text": "Yep." },
+
+  { "speaker": "Andre Popovitch", "text": "Right?" },
+
+  { "speaker": "Raph Levien", "text": "Yep." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "And so in this case, if you're on AVX512, you say, I mean, it would be kind of goofy to use a SIMD instruction, say only load one thing, but you know..."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "The way you'd write this code in AVX512 is that you'd say, how many chunks do I need? And you just divide by 16, but round up, right? If you have 33 bites in your string, then you divide by 16 and that gives you, you know, 2 and 1/16, you round up, that gives you three. So now your loop basically says. There's actually an instruction in AVX512 for exactly this reason that says, give me a mask up to this size. And so if that size is greater than 16, it's just all 1s, you're good, right? Go. And if it's, less than 16, then it gives you the ones in the mask position that are inside the bounds and a zero outside."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So your code actually is really simple. It's divide by 16 and round up, and then for each chunk generate the mask based on the size and then load and then do your string operation, which could be, we could then go through and do exactly the to_upper that I just said. So that's a nice piece of AVX512 code. If you wanna exploit SIMD and you're writing that code on something that isn't AVX512, then usually what you'll do is you'll say, divide by 16, but round down, then do that loop on the chunks of 16. And then for the end, don't do SIMD, just do a scalar loop. Like iterate one byte at a time for the stuff that's left over. And that's much more painful code because you have at least two copies. You've got the SIMD copy and then the scalar copy, which is gonna be doing the same logic hopefully. Right?"
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Yeah." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "I mean, 'cause you're writing this explicitly, there's no guarantee that it's actually gonna do the same thing you know, and it's gonna get invoked when it's not an integer multiple of the SIMD width."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "And it may not be a problem in practice, but then you also have like a branch or, or I guess you, yeah, yeah."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "It is a problem in practice! It's bloating your code size, it's making branch prediction less reliable. Whereas, you know, you go back to the AVX512 code and like from the, there isn't a branch in there, it's generating mask bits and that just flows."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Yeah. So yes, so if you're using, so, okay, the, the dream, what's the dream for us to have in Rust? Like, where could we be going?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "What's the dream? What does this look like? Yeah, so, so there's two, there's basically like two levels of the dream and level number one is making the Rust language be able to express the safety invariants for, you know, the levels and the different operations that are going on."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And that's actually very complicated. We didn't talk about ABI, that's one of the things that makes it complicated. The ABI is actually different depending on your SIMD width. And so now you've gotta like mix different ABIs inside the same binary. And that has been, as you can imagine, a huge source of bugs and complexity and so on and so forth. But, you know, I think that they're working through that. So we need to make the Rust compiler so you can express, hey, this is actually safe. I've actually checked the CPUID, so therefore I know I can call into this level of SIMD and so on and so forth."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And I think that's happening. There's some proposals on the table and I'm following that very carefully. And then you need the libraries above that, you need the abstractions where you're not thinking in terms of these individual very low level instructions, but you're thinking in a higher level."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And again, you know, for linear algebra, that's pretty straightforward 'cause it's all combinations of adds and multiplies and so on and so forth. And for the string type stuff or more complex data structures, you can do it, but we need to be a lot more creative. We need to be thinking about like, what are the primitives that are actually useful and then they map portably and safely to whichever thing you compile on. But I think it's possible. I think we can get there. I think there's exploration, you know, I've certainly been exploring it as well myself and you know, there are reasons to believe that we can actually get there. It's just gonna take a lot of work."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "That sounds super exciting. And then I wonder, is it possible, like down the line that let's say for some reason you already know that you're gonna have to have like the dispatch overhead, at least at the beginning of your program or something that LLVM, like auto vectorization could also be doing this? Or is auto vectorization going to be stuck always being like super old?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "No. That, so yeah, we skipped over that. Absolutely. When you have that target_feature block, right, then that enables all of the optimizations, that enables the use of those intrinsics and it also enables the LLVM optimizations to target those levels. So even if you're not writing explicit SIMD code, doing the multiversioning and the dispatch is something that might be really useful. "
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "I see. That does make a lot of sense. I wanted to ask about some existing Rust libraries before we run too over time. Like there's one called Pulp and one called Fearless SIMD."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Yep, yep. Absolutely. So I'm realizing that I misspoke a little bit, when I was talking about FAER. That is the linear algebra library that's on top of pulp. So that's not the low level operations. That's basically the linear algebra. So there's this layering where FAER sits on top of pulp and then you could write code directly in pulp and do your own logic."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And so, if you're doing linear algebra, great choice. A lot of really interesting designs. There's a lot of interesting representing the SIMD level as a Rust, zero-size type, which is like, if you're not familiar with your Rust, you look at that and you're like, what the heck is going on here? But it's just a way of representing, like, I have a witness to the fact that, you know, I have the CPU level and I'm gonna encode that in the type system. And then the kind of, the trick is that you make your function polymorphic on the SIMD level, which is a zero size type. And so you write your code once and you get the generation of the different versions, the multiversions, for dispatch."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Oh, it has to monomorphize it anyway."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And so the compiler is expanding that out and giving you the multiversions."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "I see." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And then pulp has this macro, every one of these libraries has this macro that does the dispatch and says, query this CPU ID and then instantiate the zero-size type that corresponds to that query, and then called into this monomorphized version of the function that you wrote. So that's kind of the trick."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Yeah. In case anyone watching needs a bit more explanation, what I'm thinking is going on is, you know, so you want a function to only be called after you've already checked something else. The thing that does the checking can sometimes return a type that's sort of the same as an empty tuple, but it just only returns it in this context in which the function is able to be called."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Then the function takes it and, you know, the only way for so someone to actually call the function is to previously called the check function and, you know, looked at the output. And then since it's a, you know, the type is isomorphic to the empty tuple, it all gets optimized out anyway and it's like, you still do the check, but you don't actually pass anything."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "That's exactly right. That's exactly right. And so the, so you're basically encoding the safety in variant in the type system, which is Rust's specialty."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Mm-hmm." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "In this particular case, you're encoding it using a zero size type there, you know, there are other things where, you know, you'll encode it with Send and Sync traits if you're trying to encode safety invariants about threads. And this is kind of the same story that, you know, this very specific, how do you do this? And then, you know, there are proposals to make that a little less painful in terms of, you know, like, do I always have to write these bracket, you know, S:SIMD bounds on my functions? And, you know, maybe we can make that like easier."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Yeah." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "But you can at least encode the information. And then the Rust compiler will then enforce safety, which is, I mean, that's the dream, right? You wanna be able to write safe code and..."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Yeah. I mean, even if it's not convenient, as long as you don't have to write unsafe, then at least you know generally that what you're doing is not totally crazy. And then if you can make it convenient, then, you know..."
+  },
+
+  { "speaker": "Raph Levien", "text": "Yeah." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "That's, I guess that's what Rust is all about."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "So Fearless SIMD is, is a library that I wrote seven years ago and did a blog post and probably link to that in the show notes, and it never got used. It was basically a experiment and it was, I think I probably can claim credit that that's the first time that you were trying to encode the safety information in the Rust type system."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Like, you know, it innovated that concept, but it did not build out a rich, useful library of primitives. It just kind of showed like, maybe you could do this thing, and then if you go back and you look at that blog post, it was much more mixed than what we've been talking about because it's like, okay, we can do this."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And if the compiler was right then it would do all the safe code, but then you start running into all these bugs with target_feature, you know, like mixing different ABIs together. And so it doesn't actually work. You can't actually, you know, make this work. But in the seven years since, you know, Rust has gotten a tremendous amount better, and people have been building these other libraries, like pulp, you know, that do that, there is a, if you look, go into the Fearless SIMD repo, there is an experiment of kind of like my, like dream or vision for what I think one of these sophisticated libraries might look like that does not just the linear algebra, but all the strings and other logic. It's not fully built out."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "But it does kind of work and it does. There's one particular thing that I find very interesting that you have these 16 bit floating point types that are very new. They're only supported on a small subset of the chips, but if you're doing pixels, 16 bit types are amazing, right?"
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Yeah." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "You get twice as much throughput. It's really good. And of course, in the machine learning world, it's all about doing more and more operations on smaller and smaller scalar values. I mean, there's fp_4s. I think there's like research on like 1 bit, you know, it's like, but for pixel values, for colors, fp_16 is the ideal representation. And you have that on apple silicon, but you don't actually have those intrinsics yet in Rust, in the Rust compiler."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Oh, really?" },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "There's a tracking issue and like, there's all these details that have to be worked out. So Fearless SIMD does give you access. And the way that it does it, it kind of goes back to the bad old days of intrinsics where the compiler didn't understand what was going on. It actually does inline assembly."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Nice." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "To do as many of those optimizations. But you can write code that uses 16 bit floating point arithmetic..."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Yeah." },
+
+  { "speaker": "Raph Levien", "text": "That gives you access to that." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "When I heard you wanted to talk about SIMD, I kind of wasn't that surprised. I didn't know that it was an interest of yours, but obviously you're interested in graphics and, you know, anytime someone's interested in graphics, it's like, okay, I wanna be doing this multiple things at the same time."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Yeah. You know, so that's another thing to talk about a little bit that, you know, I've been doing all this work on GPU-driven vector graphics rendering and for complex reasons that I've been looking at. I'm looking at how many of those ideas can map back to the CPU, and I was, I've been doing some experiments and it's very promising that I actually believe at this point."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "And there's a big collaboration. There's gonna be at least like four or five people working on this, you know, full-time in the next few months where we're gonna be building out both a CPU renderer and a hybrid renderer that you could describe it at very high level as saying we're gonna do all the geometry and all the kind of complex logic on the CPU, and then we're gonna upload that, and then the GPU is gonna be painting the individual pixels."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "It's gonna be doing the rendering. But it's not gonna be doing the geometry about where are the boundaries of the shape and what clips against what other shape. Those are very complex things to do on a GPU. So you do that on a CPU and you SIMD accelerate the hell out of that. Right. And then you upload like, okay, here are the pixels that need to get painted. Right. As a result of that geometry."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "I've seen your old blog post about like the stack monoid and stuff..."
+  },
+
+  { "speaker": "Raph Levien", "text": "Yes." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Trying to do clipping and boundary box detection and things like that on the GPU."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Exactly. So in the new design, you know, I actually just did a research retreat last week and so I was revisiting that question of how you, how do you do that clip logic? And in the prototype it's, the clip logic itself is sequential and it is just easy, right? There's a stack and you just say, every time you push, you just intersect that clip bounding box against the top of the stack, and every time you pop, you basically undo that. And so I was like, wow, if you're doing this in sequential logic, it's just so much easier than doing it on the GPU. And then I feel like kind of my dream, my vision is that, you know, one of the advantages of doing this hybrid method is that it's gonna be way more memory efficient, that you're gonna be able to do all these operations in bounded amounts of memory. Whereas if you're doing this on the GPU, this is a very serious problem of how do you predict how much memory it's gonna need. And then if you run out, how do you deal with that failure? Because that's not something that GPUs handle well at all. So I kind of wanna do this hybrid thing where you get the really nice memory usage and robustness and some other advantages and also working well on down level GPUs."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "'cause you don't always necessarily have advanced compute shader features. And then I wanna get back to it. I wanna say, okay, now that we've done this, how can we move this like complex logic and do it all GPU driven? And I think the SIMD is like, you know, SIMD is a kind of an intermediate stage between doing things that are purely scalar and doing things that are so massively parallel that you have to like, think about thousands of threads."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Yeah, that's actually really interesting to hear. As someone who's just following it, I was, you know, sort of shaking my fist at Apple for not having the barriers that were needed to implement the prefix sum algorithm or something along these lines, or, you know, there's like a fast version that was invented by Nvidia, that requires certain barriers. But then I guess apple redeem themselves by adding all of these instrinsics."
+  },
+
+  { "speaker": "Raph Levien", "text": "fp_16." },
+
+  { "speaker": "Andre Popovitch", "text": "Yeah." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Yeah, so that particular question about that barrier, we could do another podcast on that one. But we actually, we actually have a collaboration with Thomas Smith and John Owens. We actually have a academic paper that we're working on that actually has a solution that does not need that barrier."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Whoa." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "We figured out how to do it only relying on relaxed atomics semantics."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Interesting." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "With good performance, with no performance slowdown. "
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Whoa." },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "That was a long story. That was a long journey to get there."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "We'll have to do a sequel." },
+
+  { "speaker": "Raph Levien", "text": "There you go. Next time." },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "Well that's awesome. Is there anything else that you thought would be cool to discuss?"
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "I, there's, there's so much more. But I think, I think we've, I think we've covered some pretty good ground here."
+  },
+
+  {
+    "speaker": "Andre Popovitch",
+    "text": "I think so too. Well, thank you, you know, so much for, for coming on. I super appreciate it. Super enjoyed the chat."
+  },
+
+  {
+    "speaker": "Raph Levien",
+    "text": "Thank you. I'm glad, glad I could be here."
+  },
+
+  { "speaker": "Andre Popovitch", "text": "Great. Cool." }
+]
