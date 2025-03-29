@@ -44,6 +44,24 @@ import Layout from '../../layouts/Layout.astro';
             <li>Practical applications in modern software development</li>
           </ul>
         </div>
+        
+        <div class="transcript">
+          <h2>Interview Transcript</h2>
+          {
+            await Astro.glob('../../content/raph-levien-simd-transcript.txt').then(files => {
+              const content = files[0].default;
+              const lines = content.split('\n');
+              return lines.map(line => {
+                if (line.startsWith('# ')) {
+                  return `<h3>${line.substring(2)}</h3>`;
+                } else if (line.trim() !== '') {
+                  return `<p>${line}</p>`;
+                }
+                return '';
+              }).join('');
+            })
+          }
+        </div>
       </div>
       
       <a href="/" class="back-button">← Back to Home</a>
@@ -133,6 +151,25 @@ import Layout from '../../layouts/Layout.astro';
     padding: 1.5rem;
     border-radius: 8px;
     margin: 2rem 0;
+  }
+  
+  .transcript {
+    margin-top: 3rem;
+    padding: 2rem;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    border-left: 4px solid var(--accent-color);
+  }
+  
+  .transcript h3 {
+    margin-top: 2rem;
+    font-size: 1.5rem;
+    color: var(--accent-color);
+  }
+  
+  .transcript p {
+    margin: 1rem 0;
+    line-height: 1.7;
   }
   
   .back-button {
