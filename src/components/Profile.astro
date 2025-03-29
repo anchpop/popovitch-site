@@ -1,0 +1,105 @@
+---
+---
+
+<div class="profile-container">
+  <div class="profile-card">
+    <h1>Andre Popovitch</h1>
+    <div class="info-section">
+      <p class="tagline">Coder & Rust Enthusiast</p>
+      <p>Born in 1999</p>
+      <p>I blog at <a href="https://chadnauseam.com" target="_blank">chadnauseam.com</a></p>
+    </div>
+    <div class="tech-badges">
+      <span class="badge">Rust</span>
+      <span class="badge">Coding</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .profile-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+  }
+
+  .profile-card {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .profile-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    margin: 0 0 1.5rem 0;
+    background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .info-section {
+    margin-bottom: 2rem;
+  }
+
+  p {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+
+  .tagline {
+    font-size: 1.3rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+
+  a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    font-weight: 500;
+  }
+
+  a:hover {
+    color: var(--secondary-color);
+    text-decoration: underline;
+  }
+
+  .tech-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .badge {
+    background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  @media (max-width: 600px) {
+    .profile-card {
+      padding: 1.5rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+  }
+</style>
