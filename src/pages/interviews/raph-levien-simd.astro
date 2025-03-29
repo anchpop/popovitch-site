@@ -1,39 +1,43 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import Layout from "../../layouts/Layout.astro";
+import interview from "../../content/raph-levien-simd-transcript.json";
 ---
 
 <Layout>
   <div class="interview-container">
     <div class="interview-content">
       <h1>The Future of SIMD with Raph Levien</h1>
-      
+
       <div class="video-container">
-        <iframe 
-          width="560" 
-          height="315" 
-          src="https://www.youtube.com/embed/y0WcCUKxk50" 
-          title="The Future of SIMD with Raph Levien" 
-          frameborder="0" 
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen>
+        <iframe
+          width="560"
+          height="315"
+          src="https://www.youtube.com/embed/y0WcCUKxk50"
+          title="The Future of SIMD with Raph Levien"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+        >
         </iframe>
       </div>
-      
+
       <div class="interview-details">
         <h2>About this Interview</h2>
         <p>
-          In this fascinating conversation with Raph Levien, we explore the cutting-edge developments 
-          in SIMD (Single Instruction, Multiple Data) technology and its implications for the future 
-          of computing and programming languages.
+          In this fascinating conversation with Raph Levien, we explore the
+          cutting-edge developments in SIMD (Single Instruction, Multiple Data)
+          technology and its implications for the future of computing and
+          programming languages.
         </p>
-        
+
         <h2>About Raph Levien</h2>
         <p>
-          Raph Levien is a distinguished software engineer known for his work on font technology, 
-          rendering systems, and programming language design. His insights on SIMD optimization 
-          provide valuable perspective on the evolution of parallel computing.
+          Raph Levien is a distinguished software engineer known for his work on
+          font technology, rendering systems, and programming language design.
+          His insights on SIMD optimization provide valuable perspective on the
+          evolution of parallel computing.
         </p>
-        
+
         <div class="topics">
           <h3>Topics Covered:</h3>
           <ul>
@@ -44,160 +48,177 @@ import Layout from '../../layouts/Layout.astro';
             <li>Practical applications in modern software development</li>
           </ul>
         </div>
-        
+
         <div class="transcript">
           <h2>Interview Transcript</h2>
-          <Fragment set:html={await Astro.glob('../../content/raph-levien-simd-transcript.txt').then(files => {
-              const content = files[0].default;
-              const lines = content.split('\n');
-              return lines.map(line => {
-                if (line.startsWith('# ')) {
-                  return `<h3>${line.substring(2)}</h3>`;
-                } else if (line.trim() !== '') {
-                  return `<p>${line}</p>`;
-                }
-                return '';
-              }).join('');
-            })} />
+          {
+            interview.map((item) => {
+              if (item.heading) {
+                return <h3>{item.heading}</h3>;
+              } else if (item.speaker) {
+                return (
+                  <p>
+                    <span class="speaker">{item.speaker}</span>
+                    <span class="text">{item.text}</span>
+                  </p>
+                );
+              }
+            })
+          }
         </div>
+
+        <a href="/" class="back-button">← Back to Home</a>
       </div>
-      
-      <a href="/" class="back-button">← Back to Home</a>
     </div>
   </div>
-</Layout>
 
-<style>
-  .interview-container {
-    display: flex;
-    justify-content: center;
-    padding: 2rem 1rem;
-    min-height: 100vh;
-  }
-  
-  .interview-content {
-    max-width: 800px;
-    width: 100%;
-    background-color: var(--card-bg);
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  }
-  
-  h1 {
-    font-size: 2.5rem;
-    margin: 0 0 1.5rem 0;
-    background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  h2 {
-    font-size: 1.8rem;
-    margin: 2rem 0 1rem;
-    color: var(--text-color);
-  }
-  
-  h3 {
-    font-size: 1.4rem;
-    margin: 1.5rem 0 0.75rem;
-    color: var(--text-color);
-  }
-  
-  p {
-    margin: 1rem 0;
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: var(--text-color);
-  }
-  
-  .video-container {
-    position: relative;
-    padding-bottom: 56.25%; /* 16:9 aspect ratio */
-    height: 0;
-    overflow: hidden;
-    margin: 2rem 0;
-    border-radius: 8px;
-  }
-  
-  .video-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 8px;
-  }
-  
-  .interview-details {
-    margin-top: 2rem;
-  }
-  
-  ul {
-    margin: 0.5rem 0 1.5rem 1.5rem;
-  }
-  
-  li {
-    margin: 0.5rem 0;
-    font-size: 1.1rem;
-    line-height: 1.5;
-  }
-  
-  .topics {
-    background-color: rgba(var(--accent-color-rgb, 50, 69, 255), 0.05);
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin: 2rem 0;
-  }
-  
-  .transcript {
-    margin-top: 3rem;
-    padding: 2rem;
-    background-color: var(--card-bg);
-    border-radius: 8px;
-    border-left: 4px solid var(--accent-color);
-  }
-  
-  .transcript h3 {
-    margin-top: 2rem;
-    font-size: 1.5rem;
-    color: var(--accent-color);
-  }
-  
-  .transcript p {
-    margin: 1rem 0;
-    line-height: 1.7;
-  }
-  
-  .back-button {
-    display: inline-block;
-    margin-top: 2rem;
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: transform 0.2s ease, opacity 0.2s ease;
-  }
-  
-  .back-button:hover {
-    transform: translateY(-2px);
-    opacity: 0.9;
-  }
-  
-  @media (max-width: 768px) {
+  <style>
+    .interview-container {
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
     .interview-content {
-      padding: 1.5rem;
+      max-width: 800px;
+      width: 100%;
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     }
-    
+
     h1 {
-      font-size: 2rem;
+      font-size: 2.5rem;
+      margin: 0 0 1.5rem 0;
+      background: linear-gradient(
+        90deg,
+        var(--accent-color),
+        var(--secondary-color)
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    
+
     h2 {
-      font-size: 1.5rem;
+      font-size: 1.8rem;
+      margin: 2rem 0 1rem;
+      color: var(--text-color);
     }
-  }
-</style>
+
+    h3 {
+      font-size: 1.4rem;
+      margin: 1.5rem 0 0.75rem;
+      color: var(--text-color);
+    }
+
+    p {
+      margin: 1rem 0;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: var(--text-color);
+    }
+
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%; /* 16:9 aspect ratio */
+      height: 0;
+      overflow: hidden;
+      margin: 2rem 0;
+      border-radius: 8px;
+    }
+
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+
+    .interview-details {
+      margin-top: 2rem;
+    }
+
+    ul {
+      margin: 0.5rem 0 1.5rem 1.5rem;
+    }
+
+    li {
+      margin: 0.5rem 0;
+      font-size: 1.1rem;
+      line-height: 1.5;
+    }
+
+    .topics {
+      background-color: rgba(var(--accent-color-rgb, 50, 69, 255), 0.05);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+    }
+
+    .transcript {
+      margin-top: 3rem;
+      padding: 2rem;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      border-left: 4px solid var(--accent-color);
+    }
+
+    .transcript h3 {
+      margin-top: 2rem;
+      font-size: 1.5rem;
+      color: var(--accent-color);
+    }
+
+    .transcript p {
+      margin: 1rem 0;
+      line-height: 1.7;
+    }
+
+    .transcript .speaker {
+      font-weight: bold;
+      display: inline;
+    }
+
+    .back-button {
+      display: inline-block;
+      margin-top: 2rem;
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(
+        90deg,
+        var(--accent-color),
+        var(--secondary-color)
+      );
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 500;
+      transition:
+        transform 0.2s ease,
+        opacity 0.2s ease;
+    }
+
+    .back-button:hover {
+      transform: translateY(-2px);
+      opacity: 0.9;
+    }
+
+    @media (max-width: 768px) {
+      .interview-content {
+        padding: 1.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</Layout>
