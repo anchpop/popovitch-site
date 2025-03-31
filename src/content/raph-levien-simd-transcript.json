@@ -82,7 +82,7 @@
     "text": "Yeah, so SIMD, it feels somewhat lower level than SIMT somehow, I mean, especially once you start writing actual assembly to make use of the intrinsics, then it starts feeling really low level."
   },
 
-  { "speaker": "Raph Levien", "text": "That's right. That's right." },
+  { "speaker": "Raph Levien", "text": "That's right." },
 
   {
     "speaker": "Andre Popovitch",
@@ -112,7 +112,7 @@
 
   {
     "speaker": "Raph Levien",
-    "text": "Right, right. So that's the next part of the story. And so, you know, one of the things is, when people talk about CPUs and CPU architectures, you're usually talking about a RISC versus CISC choice. Where RISC means \"Reduced Instruction Set Computing\", and CISC means \"Complex Instruction Set Computing\". And there's this kind of historical divide where older computers might have these very complex addressing modes where instead of saying, I'm gonna add these two numbers together that are in registers, you might say, \"go use this register, fetch a value from this memory location pointed to by this register, increment that register, and then do the arithmetic operation on it\"."
+    "text": "Right, right. So that's the next part of the story. When people talk about CPUs and CPU architectures, you're usually talking about a RISC versus CISC choice. Where RISC means \"Reduced Instruction Set Computing\", and CISC means \"Complex Instruction Set Computing\". And there's this kind of historical divide where older computers might have these very complex addressing modes where instead of saying, I'm gonna add these two numbers together that are in registers, you might say, \"go use this register, fetch a value from this memory location pointed to by this register, increment that register, and then do the arithmetic operation on it\"."
   },
 
   {
@@ -122,19 +122,19 @@
 
   {
     "speaker": "Raph Levien",
-    "text": "That may be 95% or more of the instructions executed. But SIMD blows the entire concept of RISC away. The SIMD instruction sets are enormously complicated, right? In modern SIMD, in something like AVX 512, which is, you know, the most sophisticated SIMD implementation, I think there are over 2000 instructions. Like, you have to scroll, right? Whereas, you know, you look at an ARM, which is a beautiful RISC-inspired instruction set, and there's quick reference cards that fit on one piece of paper, right? It's just a completely different ball game. And unfortunately, there's definitely a common set."
+    "text": "That may be 95% or more of the instructions executed. But SIMD blows the entire concept of RISC away. The SIMD instruction sets are enormously complicated, right? In modern SIMD, in something like AVX 512, which is the most sophisticated SIMD implementation, I think there are over 2000 instructions. Like, you have to scroll, right? Whereas, you look at an ARM, which is a beautiful RISC-inspired instruction set, and there's quick reference cards that fit on one piece of paper, right? It's just a completely different ball game. And unfortunately, there's definitely a common set."
   },
 
   {
     "speaker": "Raph Levien",
-    "text": "So when you think about the obvious things of like, do this operation, like add subtract, multiply, compare, et cetera, on an entire vector of data, those are gonna be pretty much the same across all computers, all CPU architectures, but even something like, so there's an operation called minimum and maximum, right? It's very simple. And this also gets to what you were talking about earlier in branching that in a very classical computer, you don't have a minimum or maximum instruction. You say, if A is less than B, then choose A else choose B. That's the usual way you would write that. And in RISC, you'd have that sequence of instructions that would compute exactly that. But in a CISC design, in a modern CISC design, which is SIMD, you have a min and a max instruction, and it just does all that logic. The rules for floating point are slightly weird, like what if one of the operations is a NaN or something like that - \"not a number\" representation. You've got these floating point \"numbers\" that are not really numbers, and so there's IEEE rules for what min does, and then there's the operation that the chip does, which is slightly different, and then that operation might be slightly different on Intel than on, you know,"
+    "text": "So when you think about the obvious things of like, do this operation, like add subtract, multiply, compare, et cetera, on an entire vector of data, those are gonna be pretty much the same across all computers, all CPU architectures, but even something like, so there's an operation called minimum and maximum, right? It's very simple. And this also gets to what you were talking about earlier in branching that in a very classical computer, you don't have a minimum or maximum instruction. You say, if A is less than B, then choose A else choose B. That's the usual way you would write that. And in RISC, you'd have that sequence of instructions that would compute exactly that. But in a CISC design, in a modern CISC design, which is SIMD, you have a min and a max instruction, and it just does all that logic. The rules for floating point are slightly weird, like what if one of the operations is a NaN or something like that - \"not a number\" representation. You've got these floating point \"numbers\" that are not really numbers, and so there's IEEE rules for what min does, and then there's the operation that the chip does, which is slightly different, and then that operation might be slightly different on Intel than on AMD."
   },
 
   { "speaker": "Andre Popovitch", "text": "Oh no." },
 
   {
     "speaker": "Raph Levien",
-    "text": "It gets really, it gets really complicated, but yeah, so you end up having these instructions that both do a lot of bulk data. They're operating on this vector of very typically 8 or 16 operations at a time. And you also have typically more complex instructions that are being executed, that are, you know, that maybe a little bit of a semantic level up where you're saying minimum and maximum, or you're saying, select this mask, select business. You'd typically have, like, that would be one way of doing if-then-else. You evaluate A, you evaluate B, and then you say select A or B based on the value of that mask."
+    "text": "It gets really, it gets really complicated, but yeah, so you end up having these instructions that both do a lot of bulk data. They're operating on this vector of very typically 8 or 16 operations at a time. And you also have typically more complex instructions that are being executed that are a little bit of a semantic level up, where you're saying minimum and maximum, or you're saying, select this mask. That would be one way of doing if-then-else. You evaluate A, you evaluate B, and then you say select A or B based on the value of that mask."
   },
 
   {
@@ -144,7 +144,7 @@
 
   {
     "speaker": "Raph Levien",
-    "text": "That's right. That's right. I mean, I think minimum and maximum. So, you know, when you talk about this question of levels, and that's really, that's really also a very central question because the capabilities they keep on adding more and more and more, right? So you look at a very old chip and it's gonna be missing some of these more advanced instructions. You look at a new chip, it's got everything. And so that's a real big question. How do you know what capabilities your computer has? And if you've gotten an instruction in the stream that your hardware is too old, you know, that instruction was defined after that hardware came out, then you're actually going get undefined behavior, right? This is a very subtle thing. People talk about assembly language typically doesn't have undefined behavior, right? For example, in C if you add two signed numbers together and they overflow, that's undefined behavior. But you don't have that instruction on CPUs. You have an add instruction, and then the add instruction is almost always defined as having wrapping semantics. So the undefined behavior comes from, oh, the compiler gets to do these optimizations assuming it didn't overflow, right? And then if the assumptions are wrong, then the compiler might do something really unexpected. Like for example, you have a comparison operation against a bounds. And then you write out of bounds data. This happens all the time, but executing a SIMD instruction that does not exist on your particular level of hardware is actual real undefined behavior at the hardware level."
+    "text": "That's right. I mean, I think minimum and maximum. So, when you talk about this question of levels, and that's really, that's really also a very central question because the capabilities they keep on adding more and more and more, right? So you look at a very old chip and it's gonna be missing some of these more advanced instructions. You look at a new chip, it's got everything. And so that's a real big question. How do you know what capabilities your computer has? And if you've gotten an instruction in the stream that your hardware is too old, that instruction was defined after that hardware came out, then you're actually going get undefined behavior, right? This is a very subtle thing. People talk about assembly language typically doesn't have undefined behavior, right? For example, in C if you add two signed numbers together and they overflow, that's undefined behavior. But you don't have that instruction on CPUs. You have an add instruction, and then the add instruction is almost always defined as having wrapping semantics. So the undefined behavior comes from, oh, the compiler gets to do these optimizations assuming it didn't overflow, right? And then if the assumptions are wrong, then the compiler might do something really unexpected. Like for example, you have a comparison operation against a bounds. And then you write out of bounds data. This happens all the time, but executing a SIMD instruction that does not exist on your particular level of hardware is actual real undefined behavior at the hardware level."
   },
 
   {
@@ -154,7 +154,7 @@
 
   {
     "speaker": "Raph Levien",
-    "text": "Sometimes it'll crash, sometimes it'll, you know, there's a whole menu of what the hardware will actually do when it hits that instruction."
+    "text": "Sometimes it'll crash, but there's a whole menu of what the hardware will actually do when it hits that instruction."
   },
 
   {
@@ -200,7 +200,7 @@
 
   {
     "speaker": "Raph Levien",
-    "text": "That's right. That's absolutely right. And so, depending, and that's a really interesting observation because, you know, there's some code that isn't going to change performance that much depending on what level it's compiled for. 'cause if you're talking about the basic RISC operations, those are pretty much the same. Those haven't really changed since the nineties. When you're talking about SIMD, it can be the number of lanes, like an old Intel chip is only gonna have 128 bits wide SIMD but a newer one, which is defined as basically everything in the last 12 years you're gonna have 256 bits and then really new Intel chips will, or actually it's more likely that there'll be AMD chips these days - the Zen 4 and Zen 5 have 512 bits."
+    "text": "That's absolutely right. And so, depending, and that's a really interesting observation because there's some code that isn't going to change performance that much depending on what level it's compiled for. 'cause if you're talking about the basic RISC operations, those are pretty much the same. Those haven't really changed since the nineties. When you're talking about SIMD, it can be the number of lanes, like an old Intel chip is only gonna have 128 bits wide SIMD but a newer one, which is defined as basically everything in the last 12 years you're gonna have 256 bits and then really new Intel chips will, or actually it's more likely that there'll be AMD chips these days - the Zen 4 and Zen 5 have 512 bits."
   },
 
   {
@@ -252,12 +252,12 @@
 
   {
     "speaker": "Raph Levien",
-    "text": "So you're really, you're talking about low level, you're really dropping down to the very lowest level of the chip, where you're writing the exact instruction sequence that the chip is gonna be executing. And part of that task is, you know, the SIMD instructions are operating on registers and you need to, which is a fixed number."
+    "text": "So you're really, you're talking about low level, you're really dropping down to the very lowest level of the chip, where you're writing the exact instruction sequence that the chip is gonna be executing. And part of that task is related to the fact that the SIMD instructions are operating on registers."
   },
 
   {
     "speaker": "Raph Levien",
-    "text": "There's usually like 16 or 32 SIMD registers. And so then you need to decide instead of writing x and y, you're writing, you know, XMM0, YMM7, right? Which is really like, I actually personally kind of enjoy the puzzle aspect of writing that kind of code at that very low level. But when you start having to do all of these different versions for, you know, ARM and Intel being different, and then the different levels within each individual architecture, it really gets impractical fast. So the way that compilers do this, is you've got intrinsics and intrinsics have been evolving as well. And so an intrinsic is a function. So you'll have an instruction and it might be called something like VADDQ_F32, right? Which would be the arm instruction for adding a vector of four f32 floating point numbers to, you know, two vectors of f32 to each other. And of course, on ARM it's VADDQ_F32 and on Intel it's _mm_fadd... I don't remember, I might not have, I shoulda prepared this in advance, but it's got just different naming."
+    "text": "There's usually like 16 or 32 SIMD registers. And so then you need to decide instead of writing x and y, you're writing, you know, XMM0, YMM7, right? Which is really like, I actually personally kind of enjoy the puzzle aspect of writing that kind of code at that very low level. But when you start having to do all of these different versions for ARM and Intel being different, and then the different levels within each individual architecture, it really gets impractical fast. So the way that compilers do this, is you've got intrinsics and intrinsics have been evolving as well. And so an intrinsic is a function. So you'll have an instruction and it might be called something like VADDQ_F32, right? Which would be the ARM instruction for adding two vectors of f32 to each other. And of course, on ARM it's VADDQ_F32 and on Intel it's _mm_fadd... I don't remember, I might not have, I shoulda prepared this in advance, but it's got just different naming."
   },
 
   {
