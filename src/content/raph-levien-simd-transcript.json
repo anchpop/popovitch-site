@@ -11,7 +11,7 @@
 
   {
     "speaker": "Raph Levien",
-    "text": "I mean, I think the way that I would probably characterize that is that there's a continuum of how much parallelism your computer is exploiting, and a GPU is kind of on the extreme side. If you don't have 10,000 threads, then a GPU is just - you're not using the capabilities of that machine. Whereas, a classical scalar computer, you've got one thread. It's really doing one operation at a time sequentially on, like, one number or one unit of data. And SIMD is in the middle of that spectrum, right?"
+    "text": "I mean, I think the way that I would probably characterize that is that there's a continuum of how much parallelism your computer is exploiting, and a GPU is kind of on the extreme side. If you don't have 10,000 threads, then a GPU is just - you're not using the capabilities of that machine. Whereas, on a classical scalar computer, you've got one thread. It's really doing one operation at a time sequentially on one number or one unit of data. And SIMD is in the middle of that spectrum, right?"
   },
 
   {
@@ -33,7 +33,7 @@
 
   {
     "speaker": "Raph Levien",
-    "text": "And this is a distinction like, you know, that when you're on a GPU, you have this thing called \"single instruction, multiple threads\". Which is very subtly different than \"single instruction, multiple data\". The hardware is actually pretty similar, but the programming model is completely different because on a GPU you have different threads and so the core of the difference, maybe we're getting ahead of ourselves, but I find the stuff fascinating. The core of the difference is that if, let's say you have an if statement where you say if condition, then A, else B, and on SIMT, you can write that as an if statement and it, the compiler and the hardware will map that to what's called predication. So you'll have a predication mask. So you've got this vector of whatever you're working on. So the mask is gonna be a vector of booleans, might be like, let's say 32 wide is a really common width for this, especially for GPUs. So you have a vector of 32 bools that says, is that condition true or false? And then you do A, but it's masked where it actually only does it for the lanes in the mask that were true."
+    "text": "And this is a distinction like, you know, that when you're on a GPU, you have this thing called \"single instruction, multiple threads\". Which is very subtly different than \"single instruction, multiple data\". The hardware is actually pretty similar, but the programming model is completely different because on a GPU you have different threads and so the core of the difference, maybe we're getting ahead of ourselves, but I find the stuff fascinating. The core of the difference is, let's say you have an if statement where you say if condition, then A, else B, and on SIMT, you can write that as an if statement and the compiler and the hardware will map that to what's called \"predication\". So you'll have a predication mask. The mask is gonna be a vector of booleans, might be like, let's say 32 wide is a really common width for this, especially for GPUs. So you have a vector of 32 bools that says, is that condition true or false? And then you do A, but it's masked where it actually only does it for the lanes in the mask that were true."
   },
 
   {
@@ -48,7 +48,7 @@
 
   {
     "speaker": "Andre Popovitch",
-    "text": "Yeah. And this is probably related to why, you know, it's sort of GPU development folklore. There's this feeling that branches are slow, or at least as slow as doing both of them separately. Although, since as you said, if there's no divergence, it doesn't actually have to perform the other half of the branch."
+    "text": "Yeah. It's sort of GPU development folklore - there's this feeling that branches are slow, or at least as slow as doing each side of the branch separately. Although, since as you said, if there's no divergence, it doesn't actually have to perform the other half of the branch."
   },
 
   {
@@ -58,18 +58,18 @@
 
   {
     "speaker": "Andre Popovitch",
-    "text": "It's interesting. I mean, GPUs, they still are crazy. Like. you don't have a proper function calls on GPU, right?"
+    "text": "GPUs are crazy. Like. you don't have a proper function calls on GPU, right?"
   },
 
   { "speaker": "Raph Levien", "text": "You do in CUDA." },
 
   { "speaker": "Andre Popovitch", "text": "Oh, yeah." },
 
-  { "speaker": "Raph Levien", "text": "Not graphics, APIs." },
+  { "speaker": "Raph Levien", "text": "Not graphics APIs." },
 
   {
     "speaker": "Andre Popovitch",
-    "text": "Right. Yeah. You don't have it in Vulkan."
+    "text": "Right. You don't have it in Vulkan."
   },
 
   {
