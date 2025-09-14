@@ -634,11 +634,4 @@ And then maybe when you see where it goes, perhaps you can take ideas from them,
 
 **Andre:** That's brilliant. Thank you so much for your time. It's been a, pleasure talking to you. 
 
-**SPJ:** That's been great talking to you too. Yeah. 
-
-**Andre:** I hope you enjoyed listening to that podcast. I know I enjoyed making it. Simon [01:09:00] Peyton Jones is so smart, but so humble. Not every day you get to meet someone like that. Anyway, you probably notice that I'm a pretty small channel, and it would really mean a lot to me if you subscribed. In fact, if you press the subscribe button, most likely I'll immediately get a notification and that will immediately make me smile.
-
-So if you want to be the proximate cause in that chain reaction, hit that button. If you really like the video. You might also want to follow me on Twitter. For example, I have a post on the Android calculator app that many people seem to enjoy, so check me out there too. One last thing, if you really liked it, you can join my Discord server where we talk about math programming, all kinds of things.
-
-So anyway, thank you very much for watching and have a nice day. 
-
+**SPJ:** That's been great talking to you too. Yeah.
