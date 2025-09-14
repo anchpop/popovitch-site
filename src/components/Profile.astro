@@ -19,10 +19,16 @@
         >
       </p>
       <p>
-        Check out my interview: <a href="/interviews/raph-levien-simd"
-          >The Future of SIMD with Raph Levien</a
-        >
+        Check out my interviews:
       </p>
+      <ul class="interview-list">
+        <li>
+          <a href="/interviews/raph-levien-simd">The Future of SIMD with Raph Levien</a>
+        </li>
+        <li>
+          <a href="/interviews/spjinterview">Pursuing a Trick a Long Way with Simon Peyton Jones</a>
+        </li>
+      </ul>
     </div>
     <div class="tech-badges">
       <span class="badge">Rust</span>
@@ -98,6 +104,24 @@
   a:hover {
     color: var(--secondary-color);
     text-decoration: underline;
+  }
+
+  .interview-list {
+    margin: 0.5rem 0 1rem 1.5rem;
+    list-style-type: none;
+  }
+
+  .interview-list li {
+    margin: 0.5rem 0;
+    position: relative;
+    padding-left: 1rem;
+  }
+
+  .interview-list li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--accent-color);
   }
 
   .tech-badges {
